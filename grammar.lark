@@ -1,0 +1,40 @@
+// SimpleUI Grammar Specification
+
+start: shape+
+
+shape: (property ",")* shape_name ";"
+
+property: left_pos
+        | top_pos  
+        | width
+        | height
+        | fill
+        | outside
+        | rounded
+
+left_pos: NUMBER "px" "left"
+top_pos: NUMBER "px" "top"
+width: "w" ":" NUMBER "px"
+height: "h" ":" NUMBER "px"
+fill: "fill" ":" color
+outside: "outside" ":" color
+rounded: "rounded"
+
+// [FIX] Changed from "strings" to Named Terminals so Python captures them
+shape_name: RECTANGLE | CIRCLE | LINE
+
+RECTANGLE: "rectangle"
+CIRCLE: "circle"
+LINE: "line"
+
+color: HEX | NAME
+
+HEX: /#[0-9A-Fa-f]{6}/
+NAME: /[a-zA-Z]+/
+NUMBER: /[0-9]+\.?[0-9]*/
+
+%import common.WS
+%ignore WS
+
+COMMENT: "//" /[^\n]*/
+%ignore COMMENT
