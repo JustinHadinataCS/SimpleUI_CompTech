@@ -1,40 +1,78 @@
 // SimpleUI Grammar Specification
+//
+// GRAMMAR PURPOSE:
+// This file defines the syntax rules for the SimpleUI language using
+// Lark grammar notation. The grammar tells the parser what valid
+// SimpleUI code looks like and how to structure it.
+//
+// HOW IT WORKS:
+// - Rules define patterns (e.g., "a shape has properties and a shape name")
+// - Terminal tokens match specific text (keywords, numbers, colors)
+// - Non-terminal rules combine tokens into larger structures
+// - The parser uses these rules to build an Abstract Syntax Tree (AST)
+//
+// GRAMMAR STRUCTURE:
+// - start: Entry point - one or more shapes
+// - shape: A shape definition with properties and type
+// - property: Various shape properties (position, size, colors, etc.)
+// - Terminals: Keywords, numbers, colors, punctuation
+//
+// Example valid code:
+//   100px left, 50px top, w:200px, h:100px, fill:#FF0000, rectangle;
 
 start: shape+
 
+// Shape rule: A shape consists of zero or more properties (comma-separated),
+// followed by a shape name, and ending with a semicolon
 shape: (property ",")* shape_name ";"
 
-property: left_pos
-        | top_pos  
-        | width
-        | height
-        | fill
-        | outside
-        | rounded
+// Property rule: A shape can have any of these properties (in any order)
+property: left_pos    // Horizontal position: "100px left"
+        | top_pos     // Vertical position: "50px top"
+        | width       // Width dimension: "w:200px"
+        | height      // Height dimension: "h:100px"
+        | fill        // Fill color: "fill:#FF0000" or "fill:red"
+        | outside     // Border/outline color: "outside:#000000"
+        | rounded     // Rounded corners flag: "rounded"
 
-left_pos: NUMBER "px" "left"
-top_pos: NUMBER "px" "top"
-width: "w" ":" NUMBER "px"
-height: "h" ":" NUMBER "px"
-fill: "fill" ":" color
-outside: "outside" ":" color
+// Position properties: NUMBER followed by "px" and keyword
+left_pos: NUMBER "px" "left"  // Example: "100px left"
+top_pos: NUMBER "px" "top"    // Example: "50px top"
+
+// Size properties: keyword, colon, NUMBER, "px"
+width: "w" ":" NUMBER "px"    // Example: "w:200px"
+height: "h" ":" NUMBER "px"    // Example: "h:100px"
+
+// Color properties: keyword, colon, color value
+fill: "fill" ":" color        // Example: "fill:#FF0000" or "fill:red"
+outside: "outside" ":" color  // Example: "outside:#000000"
+
+// Rounded property: just the keyword (no value)
 rounded: "rounded"
 
+// Shape name: Must be one of the defined shape types
 // [FIX] Changed from "strings" to Named Terminals so Python captures them
 shape_name: RECTANGLE | CIRCLE | LINE
 
-RECTANGLE: "rectangle"
-CIRCLE: "circle"
-LINE: "line"
+// Shape type terminals: Exact keyword matches
+RECTANGLE: "rectangle"  // Draws a rectangle shape
+CIRCLE: "circle"       // Draws a circle shape
+LINE: "line"           // Draws a line shape
 
+// Color rule: Can be either hex color or color name
 color: HEX | NAME
 
-HEX: /#[0-9A-Fa-f]{6}/
-NAME: /[a-zA-Z]+/
-NUMBER: /[0-9]+\.?[0-9]*/
+// Terminal definitions: Regular expressions that match token patterns
+HEX: /#[0-9A-Fa-f]{6}/        // Hex color: #RRGGBB (6 hex digits)
+NAME: /[a-zA-Z]+/             // Color name: letters only (e.g., "red", "blue")
+NUMBER: /[0-9]+\.?[0-9]*/     // Number: integer or float (e.g., "100" or "3.14")
 
+// Whitespace handling: Import common whitespace rules and ignore them
+// Whitespace (spaces, tabs, newlines) doesn't affect parsing
 %import common.WS
 %ignore WS
 
-COMMENT: "//" /[^\n]*/
+// Comment handling: Single-line comments starting with //
+// Comments are ignored during parsing (like whitespace)
+COMMENT: "//" /[^\n]*/  // Matches "//" followed by any characters until newline
 %ignore COMMENT

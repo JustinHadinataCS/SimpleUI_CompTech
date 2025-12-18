@@ -1,6 +1,26 @@
 """
 Custom Lexical Analyzer for SimpleUI Compiler
 Tokenizes SimpleUI source code into meaningful tokens
+
+LEXER PURPOSE:
+The lexer (lexical analyzer) is the first stage of the compilation process.
+It reads the raw source code character by character and groups them into 
+meaningful "tokens" - the smallest units of the language (like keywords, 
+numbers, colors, punctuation). This process is called "tokenization" or 
+"lexical analysis".
+
+PROCESS:
+1. Reads source code character by character
+2. Identifies patterns (numbers, keywords, colors, punctuation)
+3. Groups characters into tokens with type and value
+4. Handles whitespace and comments (skips them)
+5. Reports errors for invalid characters
+6. Returns a list of tokens for the parser to use
+
+Example: "100px left" becomes:
+  - Token(NUMBER, "100", line 1, col 1)
+  - Token(PX, "px", line 1, col 4)
+  - Token(LEFT, "left", line 1, col 7)
 """
 
 import re
@@ -63,9 +83,25 @@ class LexerError(Exception):
 
 
 class Lexer:
-    """Custom hand-coded lexical analyzer"""
+    """
+    Custom hand-coded lexical analyzer
     
-    # Keyword mappings
+    PURPOSE:
+    The Lexer class performs lexical analysis - converting raw source code
+    into a stream of tokens. Each token represents a meaningful unit of the
+    SimpleUI language (keywords, numbers, colors, punctuation marks).
+    
+    HOW IT WORKS:
+    1. Initialization: Takes source code as input, sets up position tracking
+    2. Character-by-character scanning: Reads each character sequentially
+    3. Pattern recognition: Matches character sequences to token patterns
+    4. Token creation: Creates Token objects with type, value, and position
+    5. Error handling: Reports invalid characters or malformed tokens
+    
+    The lexer maintains position information (line, column) for error reporting.
+    """
+    
+    # Keyword mappings - maps language keywords to their token types
     KEYWORDS = {
         'px': TokenType.PX,
         'left': TokenType.LEFT,
@@ -81,11 +117,20 @@ class Lexer:
     }
     
     def __init__(self, source_code: str):
+        """
+        Initialize the lexer with source code
+        
+        PURPOSE:
+        Sets up the lexer's internal state for tokenization:
+        - Stores the source code to analyze
+        - Initializes position tracking (starts at beginning, line 1, column 1)
+        - Prepares empty token list to collect results
+        """
         self.source = source_code
-        self.pos = 0
-        self.line = 1
-        self.column = 1
-        self.tokens: List[Token] = []
+        self.pos = 0  # Current character position in source code
+        self.line = 1  # Current line number (for error reporting)
+        self.column = 1  # Current column number (for error reporting)
+        self.tokens: List[Token] = []  # List to store generated tokens
     
     def current_char(self) -> Optional[str]:
         """Get current character or None if at end"""
@@ -184,37 +229,67 @@ class Lexer:
         return Token(TokenType.COLOR_NAME, identifier, start_line, start_col)
     
     def tokenize(self) -> List[Token]:
-        """Main tokenization method - converts source code to token list"""
+        """
+        Main tokenization method - converts source code to token list
+        
+        PURPOSE:
+        This is the core method of the lexer. It performs the complete
+        lexical analysis process:
+        1. Scans through source code character by character
+        2. Skips whitespace and comments (they don't become tokens)
+        3. Recognizes different token types based on starting character
+        4. Delegates to specialized methods for complex tokens (numbers, colors, etc.)
+        5. Creates simple tokens directly (punctuation)
+        6. Handles errors for unexpected characters
+        7. Adds EOF (End of File) token to mark completion
+        
+        PROCESS:
+        - Loop through all characters in source code
+        - For each character, determine what type of token it starts
+        - Use pattern matching: digits -> number, '#' -> hex color, 
+          letters -> keyword/identifier, punctuation -> punctuation token
+        - Collect all tokens in order
+        - Return complete token list for parser
+        
+        Returns:
+            List of Token objects representing the entire source code
+        """
         self.tokens = []
         
+        # Main tokenization loop - process each character
         while self.current_char():
+            # Skip whitespace (spaces, tabs, newlines) - they don't become tokens
             self.skip_whitespace()
             
+            # If we've reached end after skipping whitespace, exit
             if not self.current_char():
                 break
             
-            # Check for comment
+            # Check for comment (// ...) - skip entire comment line
             if self.current_char() == '/' and self.peek_char() == '/':
                 self.skip_comment()
                 continue
             
+            # Save position for error reporting
             char = self.current_char()
             start_line = self.line
             start_col = self.column
             
-            # Numbers
+            # Pattern matching: determine token type based on starting character
+            
+            # Numbers: start with a digit (0-9)
             if char.isdigit():
                 self.tokens.append(self.read_number())
             
-            # Hex colors
+            # Hex colors: start with '#' symbol
             elif char == '#':
                 self.tokens.append(self.read_hex_color())
             
-            # Identifiers and keywords
+            # Identifiers and keywords: start with a letter
             elif char.isalpha():
                 self.tokens.append(self.read_identifier())
             
-            # Punctuation
+            # Punctuation tokens: single character tokens
             elif char == ',':
                 self.tokens.append(Token(TokenType.COMMA, char, start_line, start_col))
                 self.advance()
@@ -227,10 +302,12 @@ class Lexer:
                 self.tokens.append(Token(TokenType.COLON, char, start_line, start_col))
                 self.advance()
             
+            # Error: unexpected character that doesn't match any pattern
             else:
                 raise LexerError(f"Unexpected character '{char}'", start_line, start_col)
         
-        # Add EOF token
+        # Add EOF (End of File) token to mark end of token stream
+        # This helps the parser know when to stop parsing
         self.tokens.append(Token(TokenType.EOF, '', self.line, self.column))
         return self.tokens
     

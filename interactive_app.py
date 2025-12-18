@@ -1,6 +1,21 @@
 """
 SimpleUI Interactive Application
 A live coding environment with text input and visual output
+
+INTERACTIVE APP PURPOSE:
+This module provides a graphical user interface (GUI) for the SimpleUI
+compiler. It allows users to write SimpleUI code and see the visual
+output in real-time, creating an interactive coding experience.
+
+HOW IT WORKS:
+1. Provides a text editor for writing SimpleUI code
+2. Uses the compiler pipeline (parser + code generator) to process code
+3. Instead of generating Python files, directly renders shapes using Turtle
+4. Updates canvas in real-time when user clicks "Compile & Render"
+5. Provides visual feedback and error messages
+
+This is essentially an integrated development environment (IDE) for
+SimpleUI, combining code editing and visual output in one application.
 """
 
 import turtle
@@ -12,7 +27,20 @@ import ast_nodes
 
 
 class SimpleUIApp:
-    """Interactive SimpleUI compiler and renderer"""
+    """
+    Interactive SimpleUI compiler and renderer
+    
+    PURPOSE:
+    This class creates a GUI application that combines code editing
+    and visual rendering. Users can write SimpleUI code and immediately
+    see the results without needing to save files or run commands.
+    
+    ARCHITECTURE:
+    - Left panel: Text editor for SimpleUI code
+    - Right panel: Turtle graphics canvas for visual output
+    - Buttons: Compile, Clear, Load Example
+    - Status bar: Shows compilation status and errors
+    """
     
     def __init__(self):
         # Create main window
@@ -270,7 +298,25 @@ class SimpleUIApp:
         self.root.update()
     
     def draw_shape(self, shape: ast_nodes.Shape):
-        """Draw a single shape using turtle with DEBUG prints"""
+        """
+        Draw a single shape using turtle graphics
+        
+        PURPOSE:
+        This method takes a Shape AST node and renders it on the canvas
+        using Turtle graphics commands. It handles the conversion from
+        AST representation to actual drawing operations.
+        
+        PROCESS:
+        1. Determine shape type (rectangle, circle, or line)
+        2. Calculate screen coordinates from AST position
+        3. Set colors (fill and outline) from AST color nodes
+        4. Move turtle to starting position
+        5. Draw shape using appropriate Turtle commands
+        6. Handle special cases (rounded corners, different shapes)
+        
+        This is similar to what the code generator does, but instead of
+        generating Python code, it directly executes the drawing commands.
+        """
         t = self.turtle
         
         # 1. DEBUG: Check what the shape_type actually is
@@ -346,29 +392,57 @@ class SimpleUIApp:
             print(f"   -> FAIL: Shape '{s_type}' did not match 'rectangle', 'circle', or 'line'")
             
     def compile_and_render(self):
-        """Compile code and render on canvas"""
+        """
+        Compile code and render on canvas
+        
+        PURPOSE:
+        This is the main method that ties together compilation and rendering.
+        It takes the SimpleUI code from the editor, compiles it, and draws
+        the shapes directly on the canvas.
+        
+        PROCESS:
+        1. Extract SimpleUI code from text editor
+        2. Parse code into AST using parser
+        3. Clear previous drawing from canvas
+        4. Iterate through AST shapes and draw each one
+        5. Update canvas display
+        6. Show success/error status
+        
+        This method demonstrates the complete compilation pipeline in action,
+        but instead of generating Python code files, it directly executes the
+        drawing commands for immediate visual feedback.
+        """
+        # Get source code from text editor
         source_code = self.text_editor.get(1.0, tk.END)
         
+        # Validate: check if there's any code to compile
         if not source_code.strip():
             self.update_status("No code to compile", "error")
             return
         
         try:
+            # Update UI to show compilation in progress
             self.update_status("Compiling...", "info")
             self.root.update()
             
+            # Stage 1: Parse source code into AST
+            # The parser handles tokenization and builds the AST structure
             ast = self.parser.parse(source_code)
             
+            # Stage 2: Clear canvas to prepare for new drawing
             self.clear_canvas()
             
+            # Stage 3: Render each shape from AST
+            # Draw shapes in order (later shapes appear on top)
             for shape in ast.shapes:
                 self.draw_shape(shape)
             
-            # [FIX] Explicit update needed because tracer is 0
+            # Update canvas display (needed because tracer is disabled for speed)
             self.screen.update()
             self.update_status(f"✓ Compiled successfully! {len(ast.shapes)} shape(s) rendered", "success")
             
         except Exception as e:
+            # Handle compilation errors and display to user
             error_msg = str(e)
             self.update_status(f"✗ Error: {error_msg}", "error")
             messagebox.showerror("Compilation Error", f"Failed to compile:\n\n{error_msg}")

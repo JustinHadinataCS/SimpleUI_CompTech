@@ -21,7 +21,22 @@ class CompilerError(Exception):
 
 
 class SimpleUICompiler:
-    """Main compiler class that orchestrates the compilation pipeline"""
+    """
+    Main compiler class that orchestrates the compilation pipeline
+    
+    COMPILER PURPOSE:
+    The SimpleUICompiler is the main orchestrator that coordinates all
+    stages of the compilation process. It manages the flow from source
+    code to executable Python program.
+    
+    COMPILATION PIPELINE:
+    1. Lexical Analysis (Lexer): Tokenizes source code
+    2. Parsing (Parser): Builds Abstract Syntax Tree from tokens
+    3. Code Generation (CodeGenerator): Converts AST to Python/Turtle code
+    
+    The compiler handles error reporting, file I/O, and provides both
+    programmatic and command-line interfaces.
+    """
     
     def __init__(self, grammar_file: str = 'grammar.lark', verbose: bool = False):
         """
@@ -50,6 +65,25 @@ class SimpleUICompiler:
         """
         Compile SimpleUI source code string to Python/Turtle code
         
+        PURPOSE:
+        This is the main compilation method. It executes the complete
+        compilation pipeline from source code to generated Python code.
+        
+        COMPILATION PROCESS:
+        Stage 1 - Lexical Analysis:
+            - Tokenizes source code into tokens (keywords, numbers, etc.)
+            - Optional: Can use custom lexer or let Lark handle tokenization
+        
+        Stage 2 - Parsing:
+            - Parses tokens according to grammar rules
+            - Builds Abstract Syntax Tree (AST) representing program structure
+            - Validates syntax and reports errors
+        
+        Stage 3 - Code Generation:
+            - Traverses AST and generates Python/Turtle code
+            - Converts AST nodes to executable drawing commands
+            - Produces complete, runnable Python program
+        
         Args:
             source_code: SimpleUI source code as string
             
@@ -60,7 +94,8 @@ class SimpleUICompiler:
             CompilerError: If compilation fails at any stage
         """
         try:
-            # Stage 1: Lexical Analysis (Optional - Lark handles this)
+            # Stage 1: Lexical Analysis (Optional - Lark handles this internally)
+            # We can optionally use our custom lexer for demonstration/debugging
             if self.verbose:
                 print("\n[Stage 1] Lexical Analysis...")
                 self.lexer = Lexer(source_code)
@@ -72,10 +107,11 @@ class SimpleUICompiler:
                     if len(tokens) > 10:
                         print(f"    ... and {len(tokens) - 10} more tokens")
             
-            # Stage 2: Parsing
+            # Stage 2: Parsing - Convert tokens to AST
             if self.verbose:
                 print("\n[Stage 2] Parsing...")
             
+            # Parser uses grammar rules to build AST from source code
             ast = self.parser.parse(source_code)
             
             if self.verbose:
@@ -83,10 +119,11 @@ class SimpleUICompiler:
                 for i, shape in enumerate(ast.shapes, 1):
                     print(f"    Shape {i}: {shape.shape_type} at {shape.position}")
             
-            # Stage 3: Code Generation
+            # Stage 3: Code Generation - Convert AST to Python code
             if self.verbose:
                 print("\n[Stage 3] Code Generation...")
             
+            # Generator walks AST and produces Python/Turtle code
             generated_code = self.generator.generate(ast)
             
             if self.verbose:

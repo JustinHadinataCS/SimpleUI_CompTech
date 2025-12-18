@@ -1,6 +1,25 @@
 """
 AST Node Definitions for SimpleUI Compiler
 Represents the abstract syntax tree structure after parsing
+
+AST PURPOSE:
+The Abstract Syntax Tree (AST) is an intermediate representation of the
+program structure. After parsing, the source code is represented as a
+tree of nodes, where each node represents a language construct (shape,
+position, color, etc.). The AST is easier to work with than raw tokens
+or source code, and it's what the code generator uses to produce output.
+
+AST STRUCTURE:
+- ShapeList (root): Contains list of all shapes
+  - Shape: Represents a single drawable shape
+    - Position: X, Y coordinates
+    - Size: Width and height dimensions
+    - Color: Fill and outside/border colors
+    - shape_type: Type of shape (rectangle, circle, line)
+    - rounded: Whether shape has rounded corners
+
+The AST separates the structure from the syntax, making it easier to
+analyze, transform, and generate code from the program.
 """
 
 from dataclasses import dataclass
@@ -44,13 +63,23 @@ class Color:
 
 @dataclass
 class Shape:
-    """Base representation of a drawable shape"""
-    shape_type: str  # "rectangle", "circle", or "line"
-    position: Position
-    size: Size
-    fill_color: Color
-    outside_color: Color  # border/outline color
-    rounded: bool = False
+    """
+    Base representation of a drawable shape
+    
+    PURPOSE:
+    The Shape node represents a single drawable element in the SimpleUI
+    program. It contains all the information needed to render the shape:
+    type, position, size, colors, and styling options.
+    
+    This is a key AST node - the code generator uses Shape objects to
+    generate the actual drawing commands for each shape.
+    """
+    shape_type: str  # "rectangle", "circle", or "line" - determines how to draw
+    position: Position  # Where the shape is located (x, y coordinates)
+    size: Size  # Dimensions of the shape (width, height)
+    fill_color: Color  # Interior color of the shape
+    outside_color: Color  # border/outline color (for borders and lines)
+    rounded: bool = False  # Whether shape has rounded corners (for rectangles)
     
     def __repr__(self):
         return (f"Shape(type={self.shape_type}, pos={self.position}, "
@@ -60,8 +89,19 @@ class Shape:
 
 @dataclass
 class ShapeList:
-    """Root AST node containing all shapes in drawing order"""
-    shapes: List[Shape]
+    """
+    Root AST node containing all shapes in drawing order
+    
+    PURPOSE:
+    ShapeList is the root node of the AST. It contains all the shapes
+    that were parsed from the source code. The order of shapes in the
+    list determines the drawing order (z-order) - shapes drawn later
+    appear on top of shapes drawn earlier.
+    
+    This is what the parser returns and what the code generator receives
+    as input to generate the complete program.
+    """
+    shapes: List[Shape]  # Ordered list of all shapes to be drawn
     
     def __repr__(self):
         return f"ShapeList(count={len(self.shapes)})"

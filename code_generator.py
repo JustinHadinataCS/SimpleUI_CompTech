@@ -1,6 +1,22 @@
 """
 Code Generator for SimpleUI Compiler
 Generates Python/Turtle graphics code from AST
+
+CODE GENERATOR PURPOSE:
+The code generator is the final stage of compilation. It takes the Abstract
+Syntax Tree (AST) produced by the parser and generates executable Python
+code that uses Turtle graphics to render the shapes visually.
+
+PROCESS:
+1. Receives AST containing all shapes and their properties
+2. Generates Python code with Turtle graphics library
+3. Converts AST properties (position, size, colors) to Turtle commands
+4. Handles different shape types (rectangle, circle, line)
+5. Produces complete, runnable Python program
+6. Output can be saved to file or executed directly
+
+The generated code uses Python's turtle module to draw shapes on a canvas,
+creating a visual representation of the SimpleUI program.
 """
 
 import ast_nodes
@@ -8,11 +24,32 @@ from typing import List, TextIO
 
 
 class CodeGenerator:
-    """Generates executable Python code using Turtle graphics"""
+    """
+    Generates executable Python code using Turtle graphics
+    
+    PURPOSE:
+    The CodeGenerator class transforms the AST into executable Python code.
+    It walks through the AST structure and generates appropriate Turtle
+    graphics commands for each shape.
+    
+    HOW IT WORKS:
+    - Generates header code (imports, screen setup)
+    - For each shape in AST, generates drawing commands
+    - Handles shape-specific drawing logic (rectangle vs circle vs line)
+    - Generates footer code (keep window open)
+    - Maintains proper indentation for readable output
+    """
     
     def __init__(self):
-        self.indent_level = 0
-        self.indent_size = 4
+        """
+        Initialize code generator
+        
+        PURPOSE:
+        Sets up code generator state for managing indentation in
+        generated code (makes output more readable).
+        """
+        self.indent_level = 0  # Current indentation level
+        self.indent_size = 4  # Spaces per indentation level
     
     def _indent(self) -> str:
         """Get current indentation string"""
@@ -151,19 +188,37 @@ t.hideturtle()
         """
         Generate complete Python/Turtle code from AST
         
+        PURPOSE:
+        This is the main code generation method. It orchestrates the
+        generation of a complete Python program from the AST.
+        
+        PROCESS:
+        1. Generate header (imports, screen setup, turtle initialization)
+        2. For each shape in AST:
+           - Generate shape-specific drawing code
+           - Convert AST properties to Turtle commands
+           - Handle special cases (rounded corners, different shapes)
+        3. Generate footer (keep window open)
+        4. Return complete Python program as string
+        
+        Note: Shapes are drawn in order - later shapes appear on top of
+        earlier ones (z-order/layering).
+        
         Args:
             ast: ShapeList containing all shapes to render
             
         Returns:
-            Complete Python code as string
+            Complete Python code as string that can be executed
         """
+        # Start with header: imports and setup code
         code = self._generate_header()
         
-        # Generate code for each shape
+        # Generate code for each shape in the AST
         # Remember: shapes are drawn in order, later shapes appear on top
         for i, shape in enumerate(ast.shapes, start=1):
             code += self._generate_shape(shape, i)
         
+        # Add footer: keep window open until user clicks
         code += self._generate_footer()
         
         return code
