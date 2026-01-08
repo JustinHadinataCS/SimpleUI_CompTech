@@ -21,6 +21,7 @@ custom AST representation.
 """
 
 from lark import Lark, Transformer
+from lexer import Lexer, LexerError
 import ast_nodes
 
 class SimpleUITransformer(Transformer):
@@ -222,11 +223,13 @@ class Parser:
         This is the main entry point for parsing. It takes SimpleUI source
         code and returns a complete AST representing the program structure.
         
-        PROCESS:
-        1. Lark tokenizes the source code (or uses our lexer tokens)
-        2. Lark parses tokens according to grammar rules
-        3. Transformer converts parse tree to AST nodes
-        4. Returns root AST node (ShapeList) containing all shapes
+        PROCESS (with preprocessing):
+        1. Use our custom lexer to tokenize the input (handles comments, spacing)
+        2. Normalize tokens back into a canonical, whitespace-separated string
+           so the grammar parser receives clean input irrespective of original formatting
+        3. Lark parses the normalized string according to grammar rules
+        4. Transformer converts parse tree to AST nodes
+        5. Returns root AST node (ShapeList) containing all shapes
         
         Args:
             source_code: SimpleUI source code as string
@@ -234,4 +237,35 @@ class Parser:
         Returns:
             ShapeList AST node containing all parsed shapes
         """
-        return self.parser.parse(source_code)
+        # Preprocess using custom lexer (removes comments, tolerates flexible spacing)
+        try:
+            tokens = Lexer(source_code).tokenize()
+        except LexerError as e:
+            # Surface lexical issues early
+            raise e
+        
+        # Reconstruct a normalized token stream as a string for Lark
+        parts = []
+        for tok in tokens:
+            # Skip EOF marker
+            if getattr(tok, 'type', None) and getattr(tok.type, 'name', '') == 'EOF':
+                continue
+            val = getattr(tok, 'value', '')
+            if val in {',', ':', ';'}:
+                # Add punctuation as-is (spacing fixed after join)
+                parts.append(val)
+            else:
+                # Lowercase keywords/identifiers for grammar literals; numbers are unaffected
+                parts.append(str(val).lower())
+        
+        normalized = ' '.join(parts)
+        # Fix spaces around punctuation to avoid accidental token merges
+        normalized = normalized.replace(' ,', ',').replace(' :', ':').replace(' ;', ';')
+        
+        # Delegate to Lark for parsing into AST
+        return self.parser.parse(normalized)
+
+
+def parse_string(source_code: str, grammar_file: str = 'grammar.lark') -> ast_nodes.ShapeList:
+    """Convenience function to parse a source string using the Parser."""
+    return Parser(grammar_file).parse(source_code)
