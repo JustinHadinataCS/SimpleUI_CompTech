@@ -13,6 +13,7 @@ from lexer import Lexer, LexerError, tokenize_string
 from parser import Parser, parse_string
 from code_generator import CodeGenerator, generate_to_file
 import ast_nodes
+from semantic import SemanticAnalyzer, SemanticError
 
 
 class CompilerError(Exception):
@@ -56,6 +57,7 @@ class SimpleUICompiler:
         try:
             self.parser = Parser(grammar_file)
             self.generator = CodeGenerator()
+            self.semantic = SemanticAnalyzer()
             if self.verbose:
                 print(f"✓ Compiler initialized with grammar: {grammar_file}")
         except Exception as e:
@@ -113,6 +115,11 @@ class SimpleUICompiler:
             
             # Parser uses grammar rules to build AST from source code
             ast = self.parser.parse(source_code)
+
+            # Stage 2.5: Semantic analysis and normalization
+            if self.verbose:
+                print("\n[Stage 2.5] Semantic analysis...")
+            ast = self.semantic.analyze(ast)
             
             if self.verbose:
                 print(f"  AST generated: {len(ast.shapes)} shapes")
@@ -133,7 +140,10 @@ class SimpleUICompiler:
             
         except LexerError as e:
             raise CompilerError(f"Lexical error: {e}")
+        except SemanticError as e:
+            raise CompilerError(f"Semantic error: {e}")
         except ValueError as e:
+            # Keep backward compatibility: some validation raises ValueError
             raise CompilerError(f"Semantic error: {e}")
         except Exception as e:
             raise CompilerError(f"Compilation error: {e}")

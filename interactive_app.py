@@ -23,6 +23,7 @@ import tkinter as tk
 from tkinter import scrolledtext, messagebox
 from parser import Parser
 from code_generator import CodeGenerator
+from semantic import SemanticAnalyzer, SemanticError
 import ast_nodes
 
 
@@ -52,6 +53,7 @@ class SimpleUIApp:
         try:
             self.parser = Parser()
             self.generator = CodeGenerator()
+            self.semantic = SemanticAnalyzer()
         except Exception as e:
             messagebox.showerror("Initialization Error", f"Failed to initialize compiler: {e}")
             self.root.destroy()
@@ -428,6 +430,17 @@ class SimpleUIApp:
             # Stage 1: Parse source code into AST
             # The parser handles tokenization and builds the AST structure
             ast = self.parser.parse(source_code)
+
+            # Stage 2: Semantic analysis (validate & normalize AST)
+            print("[Stage 2.5] Semantic analysis...")
+            try:
+                ast = self.semantic.analyze(ast)
+            except SemanticError as se:
+                err = str(se)
+                self.update_status(f"✗ Semantic error: {err}", "error")
+                messagebox.showerror("Semantic Error", f"Semantic analysis failed:\n\n{err}")
+                return
+            print("[Stage 2.5] Semantic analysis OK")
             
             # Stage 2: Clear canvas to prepare for new drawing
             self.clear_canvas()
